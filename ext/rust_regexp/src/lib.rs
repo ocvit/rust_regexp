@@ -14,7 +14,7 @@ use magnus::{
 };
 use regex::bytes::{Regex, RegexBuilder};
 
-#[magnus::wrap(class = "", free_immediately, size)]
+#[magnus::wrap(class = "RustRegexp", free_immediately, size)]
 pub struct RustRegexp(Regex);
 
 impl RustRegexp {
