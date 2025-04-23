@@ -1,0 +1,11 @@
+[package]
+name = "rust_regexp"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+magnus = "0.7.1"
+regex = "1.11.1"
