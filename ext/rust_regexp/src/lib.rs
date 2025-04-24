@@ -27,13 +27,6 @@ impl RustRegexp {
         Ok(Self(regex))
     }
 
-    pub fn is_match(&self, haystack: RString) -> bool {
-        let regex = &self.0;
-        let haystack = unsafe { haystack.as_slice() };
-
-        regex.is_match(haystack)
-    }
-
     pub fn find(&self, haystack: RString) -> RArray {
         let result = RArray::new();
 
@@ -49,23 +42,17 @@ impl RustRegexp {
             }
         } else {
             if let Some(captures) = regex.captures(haystack) {
-                let group = RArray::with_capacity(regex.captures_len());
-
-                for capture in captures.iter() {
+                for capture in captures.iter().skip(1) {
                     if let Some(capture) = capture {
-                        group
+                        result
                             .push(Self::capture_to_ruby_string(&capture))
                             .expect("Non-frozen array");
                     } else {
-                        group
+                        result
                             .push(()) // push `nil`
                             .expect("Non-frozen array");
                     }
                 }
-
-                result
-                    .push(group)
-                    .expect("Non-frozen array");
             }
         }
 
@@ -114,6 +101,13 @@ impl RustRegexp {
         }
 
         result
+    }
+
+    pub fn is_match(&self, haystack: RString) -> bool {
+        let regex = &self.0;
+        let haystack = unsafe { haystack.as_slice() };
+
+        regex.is_match(haystack)
     }
 
     pub fn pattern(&self) -> &str {
