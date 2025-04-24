@@ -12,7 +12,7 @@
 *.a
 mkmf.log
 Gemfile.lock
+.DS_Store
+.vscode
 
 /ext/rust_regexp/target/
-
-.vscode
