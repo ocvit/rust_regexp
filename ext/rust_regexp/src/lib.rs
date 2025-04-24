@@ -7,67 +7,65 @@ use magnus::{
     method,
     prelude::*,
     scan_args::scan_args,
-    Error,
-    RArray,
-    RString,
     Value,
+    Error,
+    RString,
+    RArray,
 };
-use regex::bytes::{Regex, RegexBuilder};
+use regex::bytes::{Regex, RegexSet, Match};
 
 #[magnus::wrap(class = "RustRegexp", free_immediately, size)]
 pub struct RustRegexp(Regex);
 
 impl RustRegexp {
     pub fn new(args: &[Value]) -> Result<Self, Error> {
-        let args = scan_args::<(String,), (Option<String>,), (), (), (), ()>(args)?;
+        let args = scan_args::<(String,), (), (), (), (), ()>(args)?;
         let pattern = args.required.0;
-        let options = args.optional.0.unwrap_or_default();
 
-        let mut re = RegexBuilder::new(&pattern);
-        re.unicode(true)
-            .case_insensitive(options.contains('i'))
-            .multi_line(options.contains('m'))
-            .dot_matches_new_line(options.contains('s'))
-            .crlf(options.contains('R'))
-            .swap_greed(options.contains('U'))
-            .ignore_whitespace(options.contains('x'));
+        let regex = Regex::new(&pattern).map_err(|e| Error::new(exception::arg_error(), e.to_string()))?;
 
-        let re = re
-            .build()
-            .map_err(|e| Error::new(exception::arg_error(), e.to_string()))?;
-
-        Ok(Self(re))
+        Ok(Self(regex))
     }
 
     pub fn is_match(&self, haystack: RString) -> bool {
+        let regex = &self.0;
         let haystack = unsafe { haystack.as_slice() };
 
-        self.0.is_match(haystack)
+        regex.is_match(haystack)
     }
 
     pub fn find(&self, haystack: RString) -> RArray {
+        let result = RArray::new();
+
+        let regex = &self.0;
         let haystack = unsafe { haystack.as_slice() };
 
-        let mut result = RArray::new();
-        if self.0.captures_len() == 1 {
-            if let Some(capture) = self.0.find(haystack) {
+        if regex.captures_len() == 1 {
+            // speed optimization, `.find` is faster than `.captures`
+            if let Some(capture) = regex.find(haystack) {
                 result
-                    .push(RString::enc_new(capture.as_bytes(), RbEncoding::utf8()))
+                    .push(Self::capture_to_ruby_string(&capture))
                     .expect("Non-frozen array");
             }
         } else {
-            if let Some(captures) = self.0.captures(haystack) {
-                let mut group = RArray::with_capacity(self.0.captures_len());
+            if let Some(captures) = regex.captures(haystack) {
+                let group = RArray::with_capacity(regex.captures_len());
+
                 for capture in captures.iter() {
                     if let Some(capture) = capture {
                         group
-                            .push(RString::enc_new(capture.as_bytes(), RbEncoding::utf8()))
+                            .push(Self::capture_to_ruby_string(&capture))
                             .expect("Non-frozen array");
                     } else {
-                        group.push(()).expect("Non-frozen array");
+                        group
+                            .push(()) // push `nil`
+                            .expect("Non-frozen array");
                     }
                 }
-                result.push(group).expect("Non-frozen array");
+
+                result
+                    .push(group)
+                    .expect("Non-frozen array");
             }
         }
 
@@ -75,72 +73,113 @@ impl RustRegexp {
     }
 
     pub fn scan(&self, haystack: RString) -> RArray {
+        let result = RArray::new();
+
+        let regex = &self.0;
         let haystack = unsafe { haystack.as_slice() };
 
-        let mut result = RArray::new();
-        if self.0.captures_len() == 1 {
-            for capture in self.0.find_iter(haystack) {
+        if regex.captures_len() == 1 {
+            // speed optimization, `.find_iter` is faster than `.captures_iter`
+            for capture in regex.find_iter(haystack) {
+                let group = RArray::with_capacity(1);
+
+                group
+                    .push(Self::capture_to_ruby_string(&capture))
+                    .expect("Non-frozen array");
+
                 result
-                    .push(RString::enc_new(capture.as_bytes(), RbEncoding::utf8()))
+                    .push(group)
                     .expect("Non-frozen array");
             }
         } else {
-            for captures in self.0.captures_iter(haystack) {
-                let mut group = RArray::with_capacity(self.0.captures_len());
+            for captures in regex.captures_iter(haystack) {
+                let group = RArray::with_capacity(regex.captures_len());
+
                 for capture in captures.iter().skip(1) {
                     if let Some(capture) = capture {
                         group
-                            .push(RString::enc_new(capture.as_bytes(), RbEncoding::utf8()))
+                            .push(Self::capture_to_ruby_string(&capture))
                             .expect("Non-frozen array");
                     } else {
-                        group.push(()).expect("Non-frozen array");
+                        group
+                            .push(()) // push `nil`
+                            .expect("Non-frozen array");
                     }
                 }
-                result.push(group).expect("Non-frozen array");
+
+                result
+                    .push(group)
+                    .expect("Non-frozen array");
             }
         }
 
         result
     }
 
-    pub fn from_ruby_regexp(regexp: Value) -> Result<Self, Error> {
-        if !regexp.is_kind_of(class::regexp()) {
-            return Err(magnus::Error::new(
-                magnus::exception::type_error(),
-                "expected Regexp",
-            ));
-        }
+    pub fn pattern(&self) -> &str {
+        let regex = &self.0;
 
-        let pattern = regexp.to_r_string()?;
-        Self::new(&[pattern.as_value()])
+        regex.as_str()
+    }
+
+    fn capture_to_ruby_string(capture: &Match) -> RString {
+        RString::enc_new(
+            capture.as_bytes(),
+            RbEncoding::utf8()
+        )
     }
 }
 
-fn ruby_regexp_to_rust_regexp(rb_self: Value) -> Result<RustRegexp, Error> {
-    if !rb_self.is_kind_of(class::regexp()) {
-        return Err(magnus::Error::new(
-            magnus::exception::type_error(),
-            "expected Regexp",
-        ));
+#[magnus::wrap(class = "RustRegexp::Set", free_immediately, size)]
+pub struct RustRegexpSet(RegexSet);
+
+impl RustRegexpSet {
+    pub fn new(args: &[Value]) -> Result<Self, Error> {
+        let args = scan_args::<(Vec<String>,), (), (), (), (), ()>(args)?;
+        let patterns = args.required.0;
+
+        let set = RegexSet::new(patterns).map_err(|e| Error::new(exception::arg_error(), e.to_string()))?;
+
+        Ok(Self(set))
     }
 
-    let pattern = rb_self.to_r_string()?;
-    RustRegexp::new(&[pattern.as_value()])
+    pub fn matches(&self, haystack: RString) -> Vec<usize> {
+        let set = &self.0;
+        let haystack = unsafe { haystack.as_slice() };
+
+        set.matches(haystack).into_iter().collect()
+    }
+
+    pub fn is_match(&self, haystack: RString) -> bool {
+        let set = &self.0;
+        let haystack = unsafe { haystack.as_slice() };
+
+        set.is_match(haystack)
+    }
+
+    pub fn patterns(&self) -> Vec<String> {
+        let set = &self.0;
+
+        set.patterns().into()
+    }
 }
 
 #[magnus::init]
 pub fn init() -> Result<(), Error> {
-    let rust_regexp_class = define_class("RustRegexp", class::object())?;
+    let regexp_class = define_class("RustRegexp", class::object())?;
 
-    rust_regexp_class.define_singleton_method("new", function!(RustRegexp::new, -1))?;
-    rust_regexp_class.define_singleton_method("from_ruby_regexp", function!(RustRegexp::from_ruby_regexp, 1))?;
+    regexp_class.define_singleton_method("new", function!(RustRegexp::new, -1))?;
+    regexp_class.define_method("match", method!(RustRegexp::find, 1))?;
+    regexp_class.define_method("match?", method!(RustRegexp::is_match, 1))?;
+    regexp_class.define_method("scan", method!(RustRegexp::scan, 1))?;
+    regexp_class.define_method("pattern", method!(RustRegexp::pattern, 0))?;
 
-    rust_regexp_class.define_method("match?", method!(RustRegexp::is_match, 1))?;
-    rust_regexp_class.define_method("scan", method!(RustRegexp::scan, 1))?;
-    rust_regexp_class.define_method("find", method!(RustRegexp::find, 1))?;
+    let regexp_set_class = regexp_class.define_class("Set", class::object())?;
 
-    let ruby_regexp_class = define_class("Regexp", class::object())?;
-    ruby_regexp_class.define_method("to_rust_regexp", method!(ruby_regexp_to_rust_regexp, 0))?;
+    regexp_set_class.define_singleton_method("new", function!(RustRegexpSet::new, -1))?;
+    regexp_set_class.define_method("match", method!(RustRegexpSet::matches, 1))?;
+    regexp_set_class.define_method("match?", method!(RustRegexpSet::is_match, 1))?;
+    regexp_set_class.define_method("patterns", method!(RustRegexpSet::patterns, 0))?;
 
     Ok(())
 }
