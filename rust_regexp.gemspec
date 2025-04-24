@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
     "source_code_uri" => "https://github.com/ocvit/rust_regexp"
   }
 
-  spec.files = Dir["lib/**/*.rb", "ext/**/*.{rs,toml,lock,rb}", "README.md", "LICENSE.txt"]
+  spec.files = Dir["lib/**/*.rb", "ext/rust_regexp/src/**/*.rs", "ext/rust_regexp/*.{toml,lock,rb}", "README.md", "LICENSE.txt"]
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
