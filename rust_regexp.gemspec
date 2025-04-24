@@ -12,9 +12,12 @@ Gem::Specification.new do |spec|
   spec.description = "Simple bindings to rust/regex library."
   spec.homepage = "https://github.com/ocvit/rust_regexp"
   spec.license = "MIT"
+  spec.metadata = {
+    "bug_tracker_uri" => "https://github.com/ocvit/rust_regexp/issues",
+    "homepage_uri" => "https://github.com/ocvit/rust_regexp",
+    "source_code_uri" => "https://github.com/ocvit/rust_regexp"
+  }
 
-  # Specify which files should be added to the gem when it is released.
-  # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
   spec.files = Dir["lib/**/*.rb", "ext/**/*.{rs,toml,lock,rb}", "README.md", "LICENSE.txt"]
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
