@@ -5,14 +5,13 @@ require_relative "lib/rust_regexp/version"
 Gem::Specification.new do |spec|
   spec.name = "rust_regexp"
   spec.version = RustRegexp::VERSION
-  spec.authors = ["..."]
-  spec.email = ["..."]
+  spec.authors = ["Dmytro Horoshko"]
+  spec.email = ["electric.molfar@gmail.com"]
 
-  spec.summary = "..."
-  spec.description = "..."
-  spec.homepage = "..."
+  spec.summary = "Simple bindings for rust/regex library"
+  spec.description = "Simple bindings to rust/regex library."
+  spec.homepage = "https://github.com/ocvit/rust_regexp"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 2.7.0"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -21,4 +20,6 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions = ["ext/rust_regexp/extconf.rb"]
+
+  spec.required_ruby_version = ">= 2.7.0"
 end
