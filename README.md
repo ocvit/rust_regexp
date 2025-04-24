@@ -36,7 +36,7 @@ re = RustRegexp.new('(\w+):(\d+)')
 
 > [!TIP]
 > Note the use of *single quotes* when passing the regular expression as
-> a string to `rust_regexp` so that the backslashes aren't interpreted as escapes.
+> a string to `rust/regex` so that the backslashes aren't interpreted as escapes.
 
 To find a single match in the haystack:
 
