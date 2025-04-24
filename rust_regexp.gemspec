@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["electric.molfar@gmail.com"]
 
   spec.summary = "Simple bindings for rust/regex library"
-  spec.description = "Simple bindings to rust/regex library."
+  spec.description = "Simple bindings for rust/regex library."
   spec.homepage = "https://github.com/ocvit/rust_regexp"
   spec.license = "MIT"
   spec.metadata = {
