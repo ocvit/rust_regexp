@@ -4,7 +4,9 @@ Simple bindings for [rust/regex](https://docs.rs/regex/latest/regex/) library.
 
 ## Installation
 
-Install as a dependency:
+Install [Rust](https://www.rust-lang.org/) via [rustup](https://rustup.rs/) or in any other way.
+
+Add as a dependency:
 
 ```ruby
 # In your Gemfile
