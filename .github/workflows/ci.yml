@@ -1,0 +1,124 @@
+---
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  # ci-data:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     result: ${{ steps.fetch.outputs.result }}
+  #   steps:
+  #     - id: fetch
+  #       uses: oxidize-rb/actions/fetch-ci-data@main
+  #       with:
+  #         stable-ruby-versions: |
+  #           exclude: []
+
+  # ci:
+  #   runs-on: ${{ matrix.os }}
+  #   needs: ci-data
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+  #       ruby: ${{ fromJSON(needs.ci-data.outputs.result).stable-ruby-versions }}
+  #       # include:
+  #         # mswin relies on head and we're not creating releases for it
+  #         # so disabling it as well.
+  #         # - os: windows-latest
+  #         #   ruby: mswin
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Remove Gemfile.lock
+  #       run: rm Gemfile.lock
+
+  #     - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
+  #       with:
+  #         ruby-version: ${{ matrix.ruby }}
+  #         bundler-cache: true
+  #         cargo-cache: true
+  #         cache-version: v5
+
+  #     - name: Compile rust ext
+  #       run: bundle exec rake compile:release
+
+  #     - name: Run ruby tests
+  #       run: bundle exec rake spec
+
+  #     - name: Run ruby tests (hard-mode with GC.stress)
+  #       run: bundle exec rake spec
+  #       env:
+  #         GC_STRESS: "true"
+
+  #     - name: Run examples
+  #       run: bundle exec rake examples
+  #       # The example is failing with dyld errors, it's unlikely that this is
+  #       # something related to wasmtime-rb itself. Disabling for now.
+  #       if: matrix.os != 'macos-latest' && matrix.ruby != '3.1'
+
+  #     - name: Run benchmarks
+  #       run: bundle exec rake bench:all
+
+  #     - name: Lint ruby
+  #       run: bundle exec rake standard
+
+  #     - name: Lint rust
+  #       run: cargo clippy -- -D warnings && cargo fmt --check
+
+  ci:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        ruby-version:
+          - "2.7"
+          - "3.0"
+          - "3.1"
+          - "3.2"
+          - "3.3"
+          - "3.4"
+        # exclude:
+        #   - os: windows-latest
+        #     ruby-version: "3.2"
+
+    steps:
+      - run: |
+        echo "Commit msg: ${{ github.event.head_commit.message }}"
+
+      - uses: actions/checkout@v4
+
+      - name: Remove Gemfile.lock
+        run: rm Gemfile.lock
+
+      - name: Set up Ruby & Rust
+        uses: oxidize-rb/actions/setup-ruby-and-rust@main
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          rubygems: "3.3.26"
+          bundler-cache: true
+          cargo-cache: true
+          cache-version: v5
+
+      - name: Compile extension
+        run: bundle exec rake compile
+
+      - name: Run ruby tests
+        run: bundle exec rake spec
+
+      - name: Run ruby tests (hard-mode with GC.stress)
+        run: bundle exec rake spec
+        env:
+          GC_STRESS: "true"
+
+      - name: Lint rust
+        run: cargo clippy -- -D warnings && cargo fmt --check
