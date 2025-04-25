@@ -3,7 +3,7 @@
 [![Gem Version](https://badge.fury.io/rb/rust_regexp.svg)](https://badge.fury.io/rb/rust_regexp)
 [![Test](https://github.com/ocvit/rust_regexp/workflows/CI/badge.svg)](https://github.com/ocvit/rust_regexp/actions)
 
-Simple bindings for [rust/regex](https://docs.rs/regex/latest/regex/) library.
+Ruby bindings for [rust/regex](https://docs.rs/regex/latest/regex/) library.
 
 ## Installation
 
@@ -27,7 +27,7 @@ require "rust_regexp"
 
 ## Usage
 
-Regular expressions should pre-compiled before use:
+Regular expressions should be pre-compiled before use:
 
 ```ruby
 re = RustRegexp.new('(\w+):(\d+)')
