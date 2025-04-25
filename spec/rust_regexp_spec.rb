@@ -33,7 +33,7 @@ RSpec.describe RustRegexp do
 
   describe "#scan" do
     examples = [
-      ['\w+:\d+', "ruby:123, rust:456", [["ruby:123"], ["rust:456"]]],
+      ['\w+:\d+', "ruby:123, rust:456", ["ruby:123", "rust:456"]],
       ['(\w+):(\d+)', 'ruby:123, rust:456', [["ruby", "123"], ["rust", "456"]]],
       ['(\w+):(\d+)', '123', []],
     ]
