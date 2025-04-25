@@ -33,6 +33,7 @@ impl RustRegexp {
         let regex = &self.0;
         let haystack = unsafe { haystack.as_slice() };
 
+        // no capture groups defined except the default one
         if regex.captures_len() == 1 {
             // speed optimization, `.find` is faster than `.captures`
             if let Some(capture) = regex.find(haystack) {
@@ -65,17 +66,12 @@ impl RustRegexp {
         let regex = &self.0;
         let haystack = unsafe { haystack.as_slice() };
 
+        // no capture groups defined except the default one
         if regex.captures_len() == 1 {
             // speed optimization, `.find_iter` is faster than `.captures_iter`
             for capture in regex.find_iter(haystack) {
-                let group = RArray::with_capacity(1);
-
-                group
-                    .push(Self::capture_to_ruby_string(&capture))
-                    .expect("Non-frozen array");
-
                 result
-                    .push(group)
+                    .push(Self::capture_to_ruby_string(&capture))
                     .expect("Non-frozen array");
             }
         } else {
