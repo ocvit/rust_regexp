@@ -30,7 +30,7 @@ require "rust_regexp"
 Regular expressions should be pre-compiled before use:
 
 ```ruby
-re = RustRegexp.new('(\w+):(\d+)')
+re = RustRegexp.new('p.t{2}ern*')
 # => #<RustRegexp:...>
 ```
 
@@ -41,31 +41,37 @@ re = RustRegexp.new('(\w+):(\d+)')
 To find a single match in the haystack:
 
 ```ruby
-re.match("ruby:123, rust:456")
+RustRegexp.new('\w+:\d+').match("ruby:123, rust:456")
+# => ["ruby:123"]
+
+RustRegexp.new('(\w+):(\d+)').match("ruby:123, rust:456")
 # => ["ruby", "123"]
 ```
 
 To find all matches in the haystack:
 
 ```ruby
-re.scan("ruby:123, rust:456")
+RustRegexp.new('\w+:\d+').scan("ruby:123, rust:456")
+# => ["ruby:123", "rust:456"]
+
+RustRegexp.new('(\w+):(\d+)').scan("ruby:123, rust:456")
 # => [["ruby", "123"], ["rust", "456"]]
 ```
 
 To check whether there is at least one match in the haystack:
 
 ```ruby
-re.match?("ruby:123")
+RustRegexp.new('\w+:\d+').match?("ruby:123")
 # => true
 
-re.match?("ruby")
+RustRegexp.new('\w+:\d+').match?("ruby")
 # => false
 ```
 
 Inspect original pattern:
 
 ```ruby
-re.pattern
+RustRegexp.new('\w+:\d+').pattern
 # => "(\\w+):(\\d+)"
 ```
 
@@ -94,18 +100,18 @@ set.match("ghidefabc") # => [0, 1, 2]
 To check whether at least one pattern from the set matches the haystack:
 
 ```ruby
-set.match?("abc")
+RustRegexp::Set.new(["abc", "def"]).match?("abc")
 # => true
 
-set.match?("123")
+RustRegexp::Set.new(["abc", "def"]).match?("123")
 # => false
 ```
 
 Inspect original patterns:
 
 ```ruby
-set.patterns
-# => ["abc", "def", "ghi", "xyz"]
+RustRegexp::Set.new(["abc", "def"]).patterns
+# => ["abc", "def"]
 ```
 
 ## Development
