@@ -114,6 +114,28 @@ RustRegexp::Set.new(["abc", "def"]).patterns
 # => ["abc", "def"]
 ```
 
+## Encoding
+
+Currently, `rust_regexp` expects the haystack to be an UTF-8 string.
+
+It also supports parsing of strings with invalid UTF-8 characters by default. It's achieved via using `regex::bytes` instead of plain `regex` under the hood, so any byte sequence can be matched. The output match is encoded as UTF-8 string.
+
+In case unicode awarness of matchers should be disabled, both `RustRegexp` and `RustRegexp::Set` support `unicode: false` option:
+
+```ruby
+RustRegexp.new('\w+').match('ю٤夏')
+# => ["ю٤夏"]
+
+RustRegexp.new('\w+', unicode: false).match('ю٤夏')
+# => []
+
+RustRegexp::Set.new(['\w', '\d', '\s']).match("ю٤\u2000")
+# => [0, 1, 2]
+
+RustRegexp::Set.new(['\w', '\d', '\s'], unicode: false).match("ю٤\u2000")
+# => []
+```
+
 ## Development
 
 ```sh
