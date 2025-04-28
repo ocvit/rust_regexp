@@ -1,28 +1,29 @@
 use magnus::{
-    class,
-    define_class,
+    class, define_class,
     encoding::RbEncoding,
-    exception,
-    function,
-    method,
-    prelude::*,
-    scan_args::scan_args,
-    Value,
-    Error,
-    RString,
-    RArray,
+    exception, function, method,
+    scan_args::{get_kwargs, scan_args},
+    Error, Module, Object, RArray, RHash, RString, Value,
 };
-use regex::bytes::{Regex, RegexSet, Match};
+use regex::bytes::{Match, Regex, RegexBuilder, RegexSet, RegexSetBuilder};
 
 #[magnus::wrap(class = "RustRegexp", free_immediately, size)]
 pub struct RustRegexp(Regex);
 
 impl RustRegexp {
     pub fn new(args: &[Value]) -> Result<Self, Error> {
-        let args = scan_args::<(String,), (), (), (), (), ()>(args)?;
-        let pattern = args.required.0;
+        let args = scan_args::<(String,), (), (), (), RHash, ()>(args)?;
+        let kwargs = get_kwargs::<_, (), (Option<bool>,), ()>(args.keywords, &[], &["unicode"])?;
 
-        let regex = Regex::new(&pattern).map_err(|e| Error::new(exception::arg_error(), e.to_string()))?;
+        let pattern = args.required.0;
+        let (unicode,) = kwargs.optional;
+        let unicode = unicode.unwrap_or_else(|| true);
+
+        let mut builder = RegexBuilder::new(&pattern);
+        let regex = builder
+            .unicode(unicode)
+            .build()
+            .map_err(|e| Error::new(exception::arg_error(), e.to_string()))?;
 
         Ok(Self(regex))
     }
@@ -90,9 +91,7 @@ impl RustRegexp {
                     }
                 }
 
-                result
-                    .push(group)
-                    .expect("Non-frozen array");
+                result.push(group).expect("Non-frozen array");
             }
         }
 
@@ -113,10 +112,7 @@ impl RustRegexp {
     }
 
     fn capture_to_ruby_string(capture: &Match) -> RString {
-        RString::enc_new(
-            capture.as_bytes(),
-            RbEncoding::utf8()
-        )
+        RString::enc_new(capture.as_bytes(), RbEncoding::utf8())
     }
 }
 
@@ -125,10 +121,18 @@ pub struct RustRegexpSet(RegexSet);
 
 impl RustRegexpSet {
     pub fn new(args: &[Value]) -> Result<Self, Error> {
-        let args = scan_args::<(Vec<String>,), (), (), (), (), ()>(args)?;
-        let patterns = args.required.0;
+        let args = scan_args::<(Vec<String>,), (), (), (), RHash, ()>(args)?;
+        let kwargs = get_kwargs::<_, (), (Option<bool>,), ()>(args.keywords, &[], &["unicode"])?;
 
-        let set = RegexSet::new(patterns).map_err(|e| Error::new(exception::arg_error(), e.to_string()))?;
+        let patterns = args.required.0;
+        let (unicode,) = kwargs.optional;
+        let unicode = unicode.unwrap_or_else(|| true);
+
+        let mut builder = RegexSetBuilder::new(patterns);
+        let set = builder
+            .unicode(unicode)
+            .build()
+            .map_err(|e| Error::new(exception::arg_error(), e.to_string()))?;
 
         Ok(Self(set))
     }
@@ -137,7 +141,7 @@ impl RustRegexpSet {
         let set = &self.0;
         let haystack = unsafe { haystack.as_slice() };
 
-        set.matches(haystack).into_iter().collect()
+        set.matches(haystack).iter().collect()
     }
 
     pub fn is_match(&self, haystack: RString) -> bool {

@@ -14,15 +14,17 @@ RSpec.describe RustRegexp do
 
   describe "#match" do
     examples = [
-      ['\w+:\d+', "ruby:123, rust:456", ["ruby:123"]],
-      ['(\w+):(\d+)', 'ruby:123, rust:456', ["ruby", "123"]],
-      ['(\w+):(\d+)', '123', []],
+      ['\w+:\d+', "ruby:123, rust:456", {}, ["ruby:123"]],
+      ['(\w+):(\d+)', 'ruby:123, rust:456', {}, ["ruby", "123"]],
+      ['(\w+):(\d+)', '123', {}, []],
+      ['\w+', "абв", {}, ["абв"]],
+      ['\w+', "абв", {unicode: false}, []],
     ]
 
-    examples.each do |pattern, haystack, expected_matches|
+    examples.each do |pattern, haystack, options, expected_matches|
       context "with pattern: #{pattern.inspect}, haystack: #{haystack.inspect}" do
         it "returns #{expected_matches.inspect}" do
-          re = described_class.new(pattern)
+          re = described_class.new(pattern, **options)
           matches = re.match(haystack)
 
           expect(matches).to eq expected_matches
@@ -33,15 +35,17 @@ RSpec.describe RustRegexp do
 
   describe "#scan" do
     examples = [
-      ['\w+:\d+', "ruby:123, rust:456", ["ruby:123", "rust:456"]],
-      ['(\w+):(\d+)', 'ruby:123, rust:456', [["ruby", "123"], ["rust", "456"]]],
-      ['(\w+):(\d+)', '123', []],
+      ['\w+:\d+', "ruby:123, rust:456", {}, ["ruby:123", "rust:456"]],
+      ['(\w+):(\d+)', 'ruby:123, rust:456', {}, [["ruby", "123"], ["rust", "456"]]],
+      ['(\w+):(\d+)', '123', {}, []],
+      ['\w:\w', "а:б", {}, ["а:б"]],
+      ['\w:\w', "а:б", {unicode: false}, []],
     ]
 
-    examples.each do |pattern, haystack, expected_matches|
+    examples.each do |pattern, haystack, options, expected_matches|
       context "with pattern: #{pattern.inspect}, haystack: #{haystack.inspect}" do
         it "returns #{expected_matches.inspect}" do
-          re = described_class.new(pattern)
+          re = described_class.new(pattern, **options)
           matches = re.scan(haystack)
 
           expect(matches).to eq expected_matches
